@@ -1,0 +1,21 @@
+{
+    "name": "enocryph/rainbow",
+    "description": "php library for pretty console output",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Vadim Perevoz",
+            "email": "enocryph@gmail.com"
+        }
+    ],
+    "autoload": {
+        "psr-4": { "Rainbow\\": "src/" },
+        "exclude-from-classmap": [
+            "/tests/"
+        ],
+        "files" : [
+        ]
+    },
+    "require": {}
+}
