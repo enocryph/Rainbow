@@ -36,13 +36,14 @@ class Rainbow extends BaseRainbow
      * Change foreground color with hex
      *
      * @param $color
-     * @return mixed
+     * @return self
      * @throws InvalidColorException
      */
     public function hex($color)
     {
         $this->hexIsValid($color);
-        return call_user_func_array([$this, 'rgb'], $this->hexToRgb($color));
+        call_user_func_array([$this, 'rgb'], $this->hexToRgb($color));
+        return $this;
     }
 
     /**
@@ -97,5 +98,10 @@ class Rainbow extends BaseRainbow
     protected function hexToRgb($color)
     {
         return sscanf($color, "#%02x%02x%02x");
+    }
+
+    public function output()
+    {
+        return $this->output;
     }
 }
