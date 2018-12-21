@@ -3,27 +3,99 @@
 
 namespace Rainbow;
 
+use Rainbow\Exception\InvalidColorException;
+
+/**
+ * Class Rainbow
+ * @package Rainbow
+ */
 class Rainbow extends BaseRainbow
 {
-    const TEMPLATE_REGEX = '/(<\s*\/?\s*)(\w+)(\s*([^>]*)?\s*>)/i';
-
-    public function newline()
+    /**
+     * @param $string
+     * @return $this
+     */
+    public function __invoke($string)
     {
-        $this->string .= PHP_EOL;
+        $this->output = $string;
         return $this;
     }
 
-    public function render($template)
+    /**
+     * @return string
+     */
+    public function __toString()
     {
-        $template = preg_replace_callback(self::TEMPLATE_REGEX, function ($matches) {
-            $name = $this->formatMagicCallArgument($matches[2]);
-            $this->buildSequence($this->graphicRendition[$name]);
-            return $this->string;
-        }, $template);
-        var_dump($template); exit;
-
-// Print the entire match result
-        var_dump($matches);
+        if (!(strrpos($this->output, PHP_EOL) === 0)) {
+            return $this->output . PHP_EOL;
+        }
+        return $this->output;
     }
 
+    /**
+     * Change foreground color with hex
+     *
+     * @param $color
+     * @return mixed
+     * @throws InvalidColorException
+     */
+    public function hex($color)
+    {
+        $this->hexIsValid($color);
+        return call_user_func_array([$this, 'rgb'], $this->hexToRgb($color));
+    }
+
+    /**
+     * Change background color with hex
+     *
+     * @param $color
+     * @return mixed
+     * @throws InvalidColorException
+     */
+    public function backgroundHex($color)
+    {
+        $this->hexIsValid($color);
+        return call_user_func_array([$this, 'backgroundRgb'], $this->hexToRgb($color));
+    }
+
+    /**
+     * Alias for backgroundHex
+     *
+     * @see Rainbow::backgroundHex()
+     * @param $color
+     * @return mixed
+     */
+    public function bgHex($color)
+    {
+        return call_user_func_array([$this, 'backgroundHex'], func_get_args());
+    }
+
+    /**
+     * Check hex is valid
+     *
+     * @param $hexColor
+     * @return bool
+     * @throws InvalidColorException
+     */
+    protected function hexIsValid($hexColor)
+    {
+        preg_match('/#(?:[0-9a-fA-F]{6})/', $hexColor, $matches);
+
+        if (empty($matches)) {
+            throw new InvalidColorException("Invalid hex color: $hexColor");
+        }
+
+        return true;
+    }
+
+    /**
+     * Convert hex to rgb
+     *
+     * @param $color
+     * @return mixed
+     */
+    protected function hexToRgb($color)
+    {
+        return sscanf($color, "#%02x%02x%02x");
+    }
 }

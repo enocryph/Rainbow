@@ -3,260 +3,377 @@
 
 namespace Rainbow;
 
+use Rainbow\Exception\InvalidColorException;
+use Rainbow\Exception\InvalidCommandException;
+
 /**
- * Class Rainbow
+ * Class BaseRainbow
  * @package Rainbow
- *
- * @method $this reset()
- * @method $this bold()
- * @method $this faint()
- * @method $this italic()
- * @method $this underline()
- * @method $this blink()
- * @method $this rapidBlink()
- * @method $this reverse()
- * @method $this conceal()
- * @method $this default()
- * @method $this black()
- * @method $this red()
- * @method $this green()
- * @method $this yellow()
- * @method $this blue()
- * @method $this magenta()
- * @method $this cyan()
- * @method $this light_gray()
- * @method $this dark_gray()
- * @method $this light_red()
- * @method $this light_green()
- * @method $this light_yellow()
- * @method $this light_blue()
- * @method $this light_magenta()
- * @method $this light_cyan()
- * @method $this white()
- * @method $this background_default()
- * @method $this background_black()
- * @method $this background_red()
- * @method $this background_green()
- * @method $this background_yellow()
- * @method $this background_blue()
- * @method $this background_magenta()
- * @method $this background_cyan()
- * @method $this background_light_gray()
- * @method $this background_dark_gray()
- * @method $this background_light_red()
- * @method $this background_light_green()
- * @method $this background_light_yellow()
- * @method $this background_light_blue()
- * @method $this background_light_magenta()
- * @method $this background_light_cyan()
- * @method $this background_white()
- * @method $this bg_default()
- * @method $this bg_black()
- * @method $this bg_red()
- * @method $this bg_green()
- * @method $this bg_yellow()
- * @method $this bg_blue()
- * @method $this bg_magenta()
- * @method $this bg_cyan()
- * @method $this bg_light_gray()
- * @method $this bg_dark_gray()
- * @method $this bg_light_red()
- * @method $this bg_light_green()
- * @method $this bg_light_yellow()
- * @method $this bg_light_blue()
- * @method $this bg_light_magenta()
- * @method $this bg_light_cyan()
- * @method $this bg_white()
- * @property $this reset
- * @property $this bold
- * @property $this faint
- * @property $this italic
- * @property $this underline
- * @property $this blink
- * @property $this rapidBlink
- * @property $this reverse
- * @property $this conceal
- * @property $this default
- * @property $this black
- * @property $this red
- * @property $this green
- * @property $this yellow
- * @property $this blue
- * @property $this magenta
- * @property $this cyan
- * @property $this light_gray
- * @property $this dark_gray
- * @property $this light_red
- * @property $this light_green
- * @property $this light_yellow
- * @property $this light_blue
- * @property $this light_magenta
- * @property $this light_cyan
- * @property $this white
- * @property $this background_default
- * @property $this background_black
- * @property $this background_red
- * @property $this background_green
- * @property $this background_yellow
- * @property $this background_blue
- * @property $this background_magenta
- * @property $this background_cyan
- * @property $this background_light_gray
- * @property $this background_dark_gray
- * @property $this background_light_red
- * @property $this background_light_green
- * @property $this background_light_yellow
- * @property $this background_light_blue
- * @property $this background_light_magenta
- * @property $this background_light_cyan
- * @property $this background_white
- * @property $this bg_default
- * @property $this bg_black
- * @property $this bg_red
- * @property $this bg_green
- * @property $this bg_yellow
- * @property $this bg_blue
- * @property $this bg_magenta
- * @property $this bg_cyan
- * @property $this bg_light_gray
- * @property $this bg_dark_gray
- * @property $this bg_light_red
- * @property $this bg_light_green
- * @property $this bg_light_yellow
- * @property $this bg_light_blue
- * @property $this bg_light_magenta
- * @property $this bg_light_cyan
- * @property $this bg_white
  */
 abstract class BaseRainbow
 {
     /**
-     * Input string
-     * @var string
+     * Parameter that overrides default colors with rgb codes
+     *
+     * @var bool
      */
-    protected $string;
+    protected $overrideTerminalColorsWithRgb;
 
     /**
-     * ASCII Escape Sequence
+     * Column of command names
+     *
+     * @var array
      */
+    protected $commandNames = [];
+
+    /**
+     * Column of color names
+     *
+     * @var array
+     */
+    protected $colorNames = [];
+
+    /**
+     * Commands array
+     *
+     * @var array
+     */
+    protected $commands = [
+        ['command' => 'reset', 'code' => '0'],
+        ['command' => 'bold', 'code' => '1'],
+        ['command' => 'faint', 'code' => '2'],
+        ['command' => 'italic', 'code' => '3'],
+        ['command' => 'underline', 'code' => '4'],
+        ['command' => 'blink', 'code' => '5'],
+        ['command' => 'reverse', 'code' => '7'],
+        ['command' => 'conceal', 'code' => '8'],
+        ['command' => 'crossed', 'code' => '9'],
+        ['command' => 'fraktur', 'code' => '20'],
+        ['command' => 'reset_bold_faint', 'code' => '22'],
+        ['command' => 'reset_italic_fraktur', 'code' => '23'],
+        ['command' => 'reset_underline', 'code' => '24'],
+        ['command' => 'reset_blink', 'code' => '25'],
+        ['command' => 'reset_inverse', 'code' => '26'],
+        ['command' => 'reset_conceal', 'code' => '28'],
+        ['command' => 'reset_crossed', 'code' => '29'],
+        ['command' => 'reset_foreground_color', 'code' => '39'],
+        ['command' => 'reset_background_color', 'code' => '49'],
+    ];
+
+    /**
+     * Colors array
+     *
+     * @var array
+     */
+    protected $colors = [
+        ['color' => 'black', 'code' => '0', 'rgb' => '1,1,1'],
+        ['color' => 'red', 'code' => '1', 'rgb' => '222,56,43'],
+        ['color' => 'green', 'code' => '2', 'rgb' => '57,181,74'],
+        ['color' => 'yellow', 'code' => '3', 'rgb' => '255,199,6'],
+        ['color' => 'blue', 'code' => '4', 'rgb' => '0,111,184'],
+        ['color' => 'magenta', 'code' => '5', 'rgb' => '118,38,113'],
+        ['color' => 'cyan', 'code' => '6', 'rgb' => '44,181,223'],
+        ['color' => 'white', 'code' => '7', 'rgb' => '204,204,204'],
+        ['color' => 'brightBlack', 'code' => '0', 'rgb' => '128,128,128'],
+        ['color' => 'brightRed', 'code' => '1', 'rgb' => '255,0,0'],
+        ['color' => 'brightGreen', 'code' => '2', 'rgb' => '0,255,0'],
+        ['color' => 'brightYellow', 'code' => '3', 'rgb' => '255,255,0'],
+        ['color' => 'brightBlue', 'code' => '4', 'rgb' => '0,0,255'],
+        ['color' => 'brightMagenta', 'code' => '5', 'rgb' => '255,0,255'],
+        ['color' => 'brightCyan', 'code' => '6', 'rgb' => '0,255,255'],
+        ['color' => 'brightWhite', 'code' => '7', 'rgb' => '255,255,255']
+    ];
+
+    const FOREGROUND = ['normal' => 30, 'bright' => 90, 'rgb' => '38;2'];
+
+    const BACKGROUND = ['normal' => 40, 'bright' => 100, 'rgb' => '48;2'];
+
+    const FOREGROUND_TYPE = 'FOREGROUND';
+
+    const BACKGROUND_TYPE = 'BACKGROUND';
+
+    const FOREGROUND_RGB_TYPE = 'FOREGROUND_RGB';
+
+    const BACKGROUND_RGB_TYPE = 'BACKGROUND_RGB';
+
     const ESCAPE_SEQUENCE = "\033[%sm";
 
     /**
-     * Array of graphic rendition
-     * @var array
+     * User string
+     *
+     * @var $output string
      */
-    protected $graphicRendition = [
-        'reset' => '0',
-        'bold' => '1',
-        'faint' => '2',
-        'italic' => '3',
-        'underline' => '4',
-        'blink' => '5',
-        'rapidBlink' => '6',
-        'reverse' => '7',
-        'conceal' => '8',
-        'black' => '30',
-        'red' => '31',
-        'green' => '32',
-        'yellow' => '33',
-        'blue' => '34',
-        'magenta' => '35',
-        'cyan' => '36',
-        'light_gray' => '37',
-        'default' => '39',
-        'dark_gray' => '90',
-        'light_red' => '91',
-        'light_green' => '92',
-        'light_yellow' => '93',
-        'light_blue' => '94',
-        'light_magenta' => '95',
-        'light_cyan' => '96',
-        'white' => '97',
-        'background_black' => '40',
-        'background_red' => '41',
-        'background_green' => '42',
-        'background_yellow' => '43',
-        'background_blue' => '44',
-        'background_magenta' => '45',
-        'background_cyan' => '46',
-        'background_light_gray' => '47',
-        'background_default' => '49',
-        'background_dark_gray' => '100',
-        'background_light_red' => '101',
-        'background_light_green' => '102',
-        'background_light_yellow' => '103',
-        'background_light_blue' => '104',
-        'background_light_magenta' => '105',
-        'background_light_cyan' => '106',
-        'background_white' => '107',
-    ];
+    protected $output;
 
-    public function background(string $color): self
+    /**
+     * BaseRainbow constructor.
+     * @param bool $overrideTerminalColorsWithRgb
+     */
+    public function __construct($overrideTerminalColorsWithRgb = false)
     {
-        $color = $this->formatMagicCallArgument("background_{$color}");
-        return $this->buildSequence($this->graphicRendition[$color]);
-    }
-
-    public function foreground(string $color): self
-    {
-        $color  = $this->formatMagicCallArgument($color);
-        return $this->buildSequence($this->graphicRendition[$color]);
+        $this->overrideTerminalColorsWithRgb = $overrideTerminalColorsWithRgb;
+        $this->colorNames = array_column($this->colors, "color");
+        $this->commandNames = array_column($this->commands, "command");
     }
 
     /**
-     * @param $name
-     * @param $arguments
+     * Set foreground color by name
+     *
+     * @param $color
      * @return $this
+     * @throws InvalidColorException
      */
-    public function __call($name, $arguments)
+    public function foreground($color)
     {
-        $name = $this->formatMagicCallArgument($name);
-        return $this->buildSequence($this->graphicRendition[$name]);
-    }
-
-    public function __get($name)
-    {
-        $name = $this->formatMagicCallArgument($name);
-        return $this->buildSequence($this->graphicRendition[$name]);
-    }
-
-    /**
-     * @param $string
-     * @return $this
-     */
-    public function __invoke($string)
-    {
-        $this->string = $string;
+        $this->colorIsValid($color);
+        $type = self::FOREGROUND_TYPE;
+        $this->proceedColor($type, $color);
         return $this;
     }
 
     /**
-     * @return string
+     * Set background color by name
+     *
+     * @param $color
+     * @return $this
+     * @throws InvalidColorException
      */
-    public function __toString()
+    public function background($color)
     {
-        return $this->string . sprintf($this::ESCAPE_SEQUENCE, 0);
+        $this->colorIsValid($color);
+        $type = self::BACKGROUND_TYPE;
+        $this->proceedColor($type, $color);
+        return $this;
     }
 
     /**
-     * @param $argument
+     * Alias for foreground method
+     *
+     * @see BaseRainbow::foreground()
+     * @param $color
      * @return mixed
      */
-    protected function formatMagicCallArgument($argument)
+    public function fg($color)
     {
-        if (is_numeric(strpos($argument, 'bg_'))) {
-            $argument = str_replace('bg_', 'background_', $argument);
-        }
-        return $argument;
+        return call_user_func_array([$this, 'foreground'], func_get_args());
     }
 
     /**
-     * @param $style
+     * Alias for background method
+     *
+     * @see BaseRainbow::background()
+     * @param $color
+     * @return mixed
+     */
+    public function bg($color)
+    {
+        return call_user_func_array([$this, 'background'], func_get_args());
+    }
+
+    /**
+     * Set foreground color with rgb
+     *
+     * @param $red
+     * @param $green
+     * @param $blue
      * @return $this
      */
-    protected function buildSequence($style)
+    public function rgb($red, $green, $blue)
     {
-        $this->string = sprintf($this::ESCAPE_SEQUENCE, $style) . $this->string;
+        $this->rgbIsValid($red, $green, $blue);
+        $type = self::FOREGROUND_RGB_TYPE;
+        $this->proceedRgbColor($type, $red, $green, $blue);
         return $this;
+    }
+
+    /**
+     * Set background color with rgb
+     *
+     * @param $red
+     * @param $green
+     * @param $blue
+     * @return $this
+     */
+    public function backgroundRgb($red, $green, $blue)
+    {
+        $this->rgbIsValid($red, $green, $blue);
+        $type = self::BACKGROUND_RGB_TYPE;
+        $this->proceedRgbColor($type, $red, $green, $blue);
+        return $this;
+    }
+
+    /**
+     * Alias for backgroundRgb method
+     *
+     * @see BaseRainbow::backgroundRgb()
+     * @param $red
+     * @param $green
+     * @param $blue
+     * @return mixed
+     */
+    public function bgRgb($red, $green, $blue)
+    {
+        return call_user_func_array([$this, 'backgroundRgb'], func_get_args());
+    }
+
+    /**
+     * Proceed color
+     *
+     * @param $type
+     * @param $colorName
+     * @return $this|mixed
+     * @throws InvalidColorException
+     */
+    protected function proceedColor($type, $colorName)
+    {
+        $color = $this->getColor($colorName);
+
+        if ($this->overrideTerminalColorsWithRgb) {
+            if ($type === self::FOREGROUND_TYPE) {
+                return call_user_func_array([$this, 'rgb'], explode(',', $color['rgb']));
+            } else {
+                return call_user_func_array([$this, 'backgroundRgb'], explode(',', $color['rgb']));
+            }
+        }
+
+        $code = $this->getColorCode($type, $color);
+        $this->output = sprintf($this::ESCAPE_SEQUENCE, $code) . $this->output;
+        return $this;
+    }
+
+    /**
+     * Proceed rgb color
+     *
+     * @param $type
+     * @param $red
+     * @param $green
+     * @param $blue
+     * @return $this
+     */
+    protected function proceedRgbColor($type, $red, $green, $blue)
+    {
+        $code = $this->getRgbColorCode($type, $red, $green, $blue);
+        $this->output = sprintf($this::ESCAPE_SEQUENCE, $code) . $this->output;
+        return $this;
+    }
+
+    /**
+     * Returns command from $commands array
+     *
+     * @param $commandName
+     * @return mixed
+     * @throws InvalidCommandException
+     */
+    protected function getCommand($commandName)
+    {
+        if (is_numeric($key = array_search($commandName, $this->commandNames))) {
+            return $this->commands[$key];
+        } else {
+            throw new InvalidCommandException("Invalid command: {$commandName}");
+        }
+    }
+
+    /**
+     * Returns color from $colors array
+     *
+     * @param $colorName
+     * @return mixed
+     * @throws InvalidColorException
+     */
+    protected function getColor($colorName)
+    {
+        if (is_numeric($key = array_search($colorName, $this->colorNames))) {
+            return $this->colors[$key];
+        } else {
+            throw new InvalidColorException("Invalid command: {$colorName}");
+        }
+    }
+
+    /**
+     * Check rgb is valid
+     *
+     * @param $red
+     * @param $green
+     * @param $blue
+     * @return bool
+     */
+    protected function rgbIsValid($red, $green, $blue)
+    {
+        foreach (func_get_args() as $color) {
+            if ($color < 0 || $color > 255) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Check color is valid
+     *
+     * @param $color
+     * @return bool
+     */
+    protected function colorIsValid($color)
+    {
+        return in_array($color, $this->colorNames);
+    }
+
+    /**
+     * Checks color is bright or not
+     *
+     * @param $color
+     * @return bool
+     */
+    protected function colorIsBright($color)
+    {
+        return is_numeric(strpos($color['color'], 'bright'));
+    }
+
+    /**
+     * Returns color code
+     *
+     * @param $type
+     * @param $color
+     * @return mixed
+     */
+    protected function getColorCode($type, $color)
+    {
+        if ($type === self::FOREGROUND_TYPE) {
+            $base = self::FOREGROUND;
+        } else {
+            $base = self::BACKGROUND;
+        }
+
+        if ($this->colorIsBright($color)) {
+            $code = $base['bright'];
+        } else {
+            $code = $base['normal'];
+        }
+
+        $code += $color['code'];
+
+        return $code;
+    }
+
+    /**
+     * Returns rgb color code
+     *
+     * @param $type
+     * @param $red
+     * @param $green
+     * @param $blue
+     * @return string
+     */
+    protected function getRgbColorCode($type, $red, $green, $blue)
+    {
+        if ($type === self::FOREGROUND_RGB_TYPE) {
+            $base = self::FOREGROUND;
+        } else {
+            $base = self::BACKGROUND;
+        }
+
+        $code = "{$base['rgb']};{$red};{$green};{$blue}";
+
+        return $code;
     }
 }
