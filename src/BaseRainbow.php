@@ -3,6 +3,7 @@
 
 namespace Rainbow;
 
+use Rainbow\Exception\InvalidArgumentException;
 use Rainbow\Exception\InvalidColorException;
 use Rainbow\Exception\InvalidCommandException;
 
@@ -49,15 +50,15 @@ abstract class BaseRainbow
         ['command' => 'conceal', 'code' => '8'],
         ['command' => 'crossed', 'code' => '9'],
         ['command' => 'fraktur', 'code' => '20'],
-        ['command' => 'reset_bold_faint', 'code' => '22'],
-        ['command' => 'reset_italic_fraktur', 'code' => '23'],
-        ['command' => 'reset_underline', 'code' => '24'],
-        ['command' => 'reset_blink', 'code' => '25'],
-        ['command' => 'reset_inverse', 'code' => '26'],
-        ['command' => 'reset_conceal', 'code' => '28'],
-        ['command' => 'reset_crossed', 'code' => '29'],
-        ['command' => 'reset_foreground_color', 'code' => '39'],
-        ['command' => 'reset_background_color', 'code' => '49'],
+        ['command' => 'resetBoldFaint', 'code' => '22'],
+        ['command' => 'resetItalicFraktur', 'code' => '23'],
+        ['command' => 'resetUnderline', 'code' => '24'],
+        ['command' => 'resetBlink', 'code' => '25'],
+        ['command' => 'resetInverse', 'code' => '26'],
+        ['command' => 'resetConceal', 'code' => '28'],
+        ['command' => 'resetCrossed', 'code' => '29'],
+        ['command' => 'resetForegroundColor', 'code' => '39'],
+        ['command' => 'resetBackgroundColor', 'code' => '49'],
     ];
 
     /**
@@ -107,6 +108,7 @@ abstract class BaseRainbow
 
     /**
      * BaseRainbow constructor.
+     *
      * @param bool $overrideTerminalColorsWithRgb
      */
     public function __construct($overrideTerminalColorsWithRgb = false)
@@ -114,6 +116,56 @@ abstract class BaseRainbow
         $this->overrideTerminalColorsWithRgb = $overrideTerminalColorsWithRgb;
         $this->colorNames = array_column($this->colors, "color");
         $this->commandNames = array_column($this->commands, "command");
+    }
+
+
+    /**
+     * @param $name
+     * @param $arguments
+     * @return BaseRainbow
+     * @throws InvalidArgumentException
+     * @throws InvalidColorException
+     * @throws InvalidCommandException
+     */
+    public function __call($name, $arguments)
+    {
+        return $this->proceedMagicCall($name);
+    }
+
+    /**
+     * @param $name
+     * @return BaseRainbow
+     * @throws InvalidArgumentException
+     * @throws InvalidColorException
+     * @throws InvalidCommandException
+     */
+    public function __get($name)
+    {
+        return $this->proceedMagicCall($name);
+    }
+
+    /**
+     * @param $name
+     * @return $this
+     * @throws InvalidArgumentException
+     * @throws InvalidColorException
+     * @throws InvalidCommandException
+     */
+    public function proceedMagicCall($name)
+    {
+        $formatted = $this->prepareMagicArgument($name);
+        if ($this->isColor($formatted)) {
+            if ($this->isBackgroundColor($name)) {
+                $this->proceedColor(self::BACKGROUND_TYPE, $formatted);
+            } else {
+                $this->proceedColor(self::FOREGROUND_TYPE, $formatted);
+            }
+        } elseif ($this->isCommand($name)) {
+            $this->proceedCommand($name);
+        } else {
+            throw new InvalidArgumentException("Invalid argument {$name}");
+        }
+        return $this;
     }
 
     /**
@@ -216,6 +268,19 @@ abstract class BaseRainbow
         return call_user_func_array([$this, 'backgroundRgb'], func_get_args());
     }
 
+
+    /**
+     * Proceed command
+     *
+     * @param $command
+     * @return BaseRainbow
+     * @throws InvalidCommandException
+     */
+    public function command($command)
+    {
+        return $this->proceedCommand($command);
+    }
+
     /**
      * Proceed color
      *
@@ -253,6 +318,21 @@ abstract class BaseRainbow
     protected function proceedRgbColor($type, $red, $green, $blue)
     {
         $code = $this->getRgbColorCode($type, $red, $green, $blue);
+        $this->output = sprintf($this::ESCAPE_SEQUENCE, $code) . $this->output;
+        return $this;
+    }
+
+    /**
+     * Proceed command
+     *
+     * @param $name
+     * @return $this
+     * @throws InvalidCommandException
+     */
+    protected function proceedCommand($name)
+    {
+        $command = $this->getCommand($name);
+        $code = $command['code'];
         $this->output = sprintf($this::ESCAPE_SEQUENCE, $code) . $this->output;
         return $this;
     }
@@ -375,5 +455,50 @@ abstract class BaseRainbow
         $code = "{$base['rgb']};{$red};{$green};{$blue}";
 
         return $code;
+    }
+
+    /**
+     * Check is color
+     *
+     * @param $color
+     * @return bool
+     */
+    protected function isColor($color)
+    {
+        return is_numeric(array_search($color, $this->colorNames));
+    }
+
+    /**
+     * Check is command
+     *
+     * @param $command
+     * @return bool
+     */
+    protected function isCommand($command)
+    {
+        return is_numeric(array_search($command, $this->commandNames));
+    }
+
+    /**
+     * Prepares magic argument
+     *
+     * @param $argument
+     * @return string
+     */
+    protected function prepareMagicArgument($argument)
+    {
+        return lcfirst(preg_replace('/^(background|bg|fg|foreground)/', '', $argument));
+    }
+
+    /**
+     * Check is background color
+     *
+     * @param $color
+     * @return bool
+     */
+    protected function isBackgroundColor($color)
+    {
+        preg_match('/^(bg|background)/', $color, $matches);
+        return !empty($matches);
     }
 }
