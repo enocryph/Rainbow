@@ -3,6 +3,7 @@
 
 namespace Rainbow;
 
+use Rainbow\Exception\InvalidArgumentException;
 use Rainbow\Exception\InvalidColorException;
 
 /**
@@ -209,6 +210,8 @@ use Rainbow\Exception\InvalidColorException;
  */
 class Rainbow extends BaseRainbow
 {
+    const ESCAPE_LINER_SEQUENCE = "\033[0G\033[2K";
+
     /**
      * @param $string
      * @return $this
@@ -278,7 +281,7 @@ class Rainbow extends BaseRainbow
      */
     protected function hexIsValid($hexColor)
     {
-        preg_match('/#(?:[0-9a-fA-F]{6})/', $hexColor, $matches);
+        preg_match('/^#(?:[0-9a-fA-F]{6})$/', $hexColor, $matches);
 
         if (empty($matches)) {
             throw new InvalidColorException("Invalid hex color: $hexColor");
@@ -298,8 +301,44 @@ class Rainbow extends BaseRainbow
         return sscanf($color, "#%02x%02x%02x");
     }
 
+    /**
+     * Returns string
+     *
+     * @return string
+     */
     public function output()
     {
         return $this->output;
+    }
+
+    /**
+     * Outputs string on the previous line
+     *
+     * @param $times
+     * @param callable $callback ($this, $counter)
+     * @return $this
+     */
+    public function liner($times, callable $callback)
+    {
+        for ($i = 1; $i <= $times; $i++) {
+            $result = $callback($this, $i);
+            echo self::ESCAPE_LINER_SEQUENCE . $result;
+
+            if ($i === $times) {
+                echo PHP_EOL;
+            }
+        }
+        return $this;
+    }
+
+    /**
+     * Add PHP_EOL to end of the string
+     *
+     * @return $this
+     */
+    public function newline()
+    {
+        $this->output = $this->output . PHP_EOL;
+        return $this;
     }
 }

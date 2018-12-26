@@ -41,15 +41,15 @@ abstract class BaseRainbow
      */
     protected $commands = [
         ['command' => 'reset', 'code' => '0'],
-        ['command' => 'bold', 'code' => '1'],
-        ['command' => 'faint', 'code' => '2'],
-        ['command' => 'italic', 'code' => '3'],
-        ['command' => 'underline', 'code' => '4'],
-        ['command' => 'blink', 'code' => '5'],
-        ['command' => 'reverse', 'code' => '7'],
-        ['command' => 'conceal', 'code' => '8'],
-        ['command' => 'crossed', 'code' => '9'],
-        ['command' => 'fraktur', 'code' => '20'],
+        ['command' => 'bold', 'code' => '1', 'reset' => 'resetBoldFaint'],
+        ['command' => 'faint', 'code' => '2', 'reset' => 'resetBoldFaint'],
+        ['command' => 'italic', 'code' => '3', 'reset' => 'resetItalicFraktur'],
+        ['command' => 'underline', 'code' => '4', 'reset' => 'resetUnderline'],
+        ['command' => 'blink', 'code' => '5', 'reset' => 'resetBlink'],
+        ['command' => 'reverse', 'code' => '7', 'reset' => 'resetInverse'],
+        ['command' => 'conceal', 'code' => '8', 'reset' => 'resetConceal'],
+        ['command' => 'crossed', 'code' => '9', 'reset' => 'resetCrossed'],
+        ['command' => 'fraktur', 'code' => '20', 'reset' => 'resetItalicFraktur'],
         ['command' => 'resetBoldFaint', 'code' => '22'],
         ['command' => 'resetItalicFraktur', 'code' => '23'],
         ['command' => 'resetUnderline', 'code' => '24'],
@@ -96,6 +96,8 @@ abstract class BaseRainbow
     const FOREGROUND_RGB_TYPE = 'FOREGROUND_RGB';
 
     const BACKGROUND_RGB_TYPE = 'BACKGROUND_RGB';
+
+    const COMMAND_TYPE = 'COMMAND';
 
     const ESCAPE_SEQUENCE = "\033[%sm";
 
@@ -292,15 +294,6 @@ abstract class BaseRainbow
     protected function proceedColor($type, $colorName)
     {
         $color = $this->getColor($colorName);
-
-        if ($this->overrideTerminalColorsWithRgb) {
-            if ($type === self::FOREGROUND_TYPE) {
-                return call_user_func_array([$this, 'rgb'], explode(',', $color['rgb']));
-            } else {
-                return call_user_func_array([$this, 'backgroundRgb'], explode(',', $color['rgb']));
-            }
-        }
-
         $code = $this->getColorCode($type, $color);
         $this->output = sprintf($this::ESCAPE_SEQUENCE, $code) . $this->output;
         return $this;
@@ -331,8 +324,7 @@ abstract class BaseRainbow
      */
     protected function proceedCommand($name)
     {
-        $command = $this->getCommand($name);
-        $code = $command['code'];
+        $code = $this->getCommandCode($name);
         $this->output = sprintf($this::ESCAPE_SEQUENCE, $code) . $this->output;
         return $this;
     }
@@ -344,10 +336,14 @@ abstract class BaseRainbow
      * @return mixed
      * @throws InvalidCommandException
      */
-    protected function getCommand($commandName)
+    protected function getCommandCode($commandName, $reset = false)
     {
         if (is_numeric($key = array_search($commandName, $this->commandNames))) {
-            return $this->commands[$key];
+            if ($reset) {
+                return isset($this->commands[$key]['reset']) ?
+                    $this->getCommandCode($this->commands[$key]['reset']) : $this->getCommandCode('reset');
+            }
+            return $this->commands[$key]['code'];
         } else {
             throw new InvalidCommandException("Invalid command: {$commandName}");
         }
@@ -418,6 +414,10 @@ abstract class BaseRainbow
      */
     protected function getColorCode($type, $color)
     {
+        if ($this->overrideTerminalColorsWithRgb) {
+            return call_user_func_array([$this, 'getRgbColorCode'], array_merge([$type], explode(',', $color['rgb'])));
+        }
+
         if ($type === self::FOREGROUND_TYPE) {
             $base = self::FOREGROUND;
         } else {
@@ -446,7 +446,7 @@ abstract class BaseRainbow
      */
     protected function getRgbColorCode($type, $red, $green, $blue)
     {
-        if ($type === self::FOREGROUND_RGB_TYPE) {
+        if ($type === self::FOREGROUND_RGB_TYPE || $type === self::FOREGROUND_TYPE) {
             $base = self::FOREGROUND;
         } else {
             $base = self::BACKGROUND;
