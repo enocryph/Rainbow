@@ -54,4 +54,20 @@ class RainbowTest extends TestCase
         $this->expectOutputString("" . PHP_EOL);
         echo $rainbow;
     }
+
+    public function testNewline()
+    {
+        $rainbow = new Rainbow();
+        $this->assertSame("Hello world" . PHP_EOL, $rainbow("Hello world")->newline()->output());
+    }
+
+    public function testLiner()
+    {
+        $rainbow = new Rainbow();
+        $rainbow->liner(2, function (\Rainbow\Rainbow $rainbow, $counter) {
+            return $rainbow("Parsed $counter of 100")->red->output();
+        });
+
+        $this->expectOutputString("\033[0G\033[2K\033[31mParsed 1 of 100\033[0G\033[2K\033[31mParsed 2 of 100\n");
+    }
 }

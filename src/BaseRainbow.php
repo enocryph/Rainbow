@@ -336,13 +336,9 @@ abstract class BaseRainbow
      * @return mixed
      * @throws InvalidCommandException
      */
-    protected function getCommandCode($commandName, $reset = false)
+    protected function getCommandCode($commandName)
     {
         if (is_numeric($key = array_search($commandName, $this->commandNames))) {
-            if ($reset) {
-                return isset($this->commands[$key]['reset']) ?
-                    $this->getCommandCode($this->commands[$key]['reset']) : $this->getCommandCode('reset');
-            }
             return $this->commands[$key]['code'];
         } else {
             throw new InvalidCommandException("Invalid command: {$commandName}");
