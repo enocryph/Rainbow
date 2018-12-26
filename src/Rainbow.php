@@ -341,4 +341,97 @@ class Rainbow extends BaseRainbow
         $this->output = $this->output . PHP_EOL;
         return $this;
     }
+
+    public function template($template)
+    {
+        $template = preg_replace_callback(self::TAGS_PATTERN, function ($matches) {
+            list ($fullMatch, $entrance, $ending, $tag) = $matches;
+            $type = null;
+
+            if ($this->isHexTag($fullMatch) && $this->hexIsValid($hexColor = $this->extractHexFromTag($tag))) {
+                $rgb = $this->hexToRgb($hexColor);
+            }
+
+            if ($this->isRgbTag($fullMatch) && $rgb = $this->extractRgbFromTag($tag)) {
+                $rgb = explode(";", $rgb);
+            }
+
+            if ($this->isBackgroundColor($tag)) {
+                $type = isset($rgb) ? self::BACKGROUND_RGB_TYPE : self::BACKGROUND_TYPE;
+            } elseif ($this->isColor($tag) || strpos($tag, 'rgb') === 0 || strpos($tag, 'hex') === 0) {
+                $type = isset($rgb) ? self::FOREGROUND_RGB_TYPE : self::FOREGROUND_TYPE;
+            } elseif ($this->isCommand($tag)) {
+                $type = self::COMMAND_TYPE;
+            }
+
+            $sequence =  $this->getSequenceByTagInfo($type, isset($rgb) ? $rgb : $tag, $this->isClosingTag($fullMatch));
+            return $sequence;
+        }, $template);
+
+        $this->output = $template;
+        return $this;
+    }
+
+    protected function isRgbTag($tag)
+    {
+        return is_numeric(strpos($tag, "rgb"));
+    }
+
+    protected function isHexTag($tag)
+    {
+        return is_numeric(strpos($tag, "hex"));
+    }
+
+    protected function extractHexFromTag($tag)
+    {
+        return str_replace('hex', '', $tag);
+    }
+
+    protected function extractRgbFromTag($tag)
+    {
+        return str_replace('rgb:', '', $tag);
+    }
+
+    protected function isClosingTag($tag)
+    {
+        return is_numeric(strpos($tag, '</'));
+    }
+
+    protected function getSequenceByTagInfo($type, $argument, $isClosing)
+    {
+        if ($isClosing) {
+            return $this->getSequenceForClosingTag($type, $argument);
+        }
+
+        if ($type === self::FOREGROUND_TYPE || $type === self::BACKGROUND_TYPE) {
+            $color = $this->getColor($argument);
+            $code =  $this->getColorCode($type, $color);
+        } elseif ($type === self::FOREGROUND_RGB_TYPE || $type === self::BACKGROUND_RGB_TYPE) {
+            list ($red, $green, $blue) = $argument;
+            $code =  $this->getRgbColorCode($type, $red, $green, $blue);
+        } elseif ($type === self::COMMAND_TYPE) {
+            $code = $this->getCommandCode($argument);
+        } else {
+            throw new InvalidArgumentException("Unknown type {$type}");
+        }
+
+        return $this->buildSequence($code);
+    }
+
+    protected function getSequenceForClosingTag($type, $argument)
+    {
+        if ($type === self::BACKGROUND_RGB_TYPE || $type === self::BACKGROUND_TYPE) {
+            $code = $this->getCommandCode('resetBackgroundColor');
+        } elseif ($type === self::FOREGROUND_RGB_TYPE || $type === self::FOREGROUND_TYPE) {
+            $code = $this->getCommandCode('resetForegroundColor');
+        } elseif ($type === self::COMMAND_TYPE) {
+            $code = $this->getCommandCode($argument, true);
+        }
+        return $this->buildSequence($code);
+    }
+
+    protected function buildSequence($code)
+    {
+        return sprintf(self::ESCAPE_SEQUENCE, $code);
+    }
 }
