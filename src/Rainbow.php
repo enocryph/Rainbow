@@ -360,7 +360,6 @@ class Rainbow extends BaseRainbow
     {
         $template = preg_replace_callback(self::TAGS_PATTERN, function ($matches) {
             list ($fullMatch, , , $tag) = $matches;
-            $type = null;
             $argument = $tag;
 
             if ($this->isCommand($tag)) {
@@ -373,18 +372,7 @@ class Rainbow extends BaseRainbow
                 throw new InvalidArgumentException("Unknown tag $tag");
             }
 
-            if ($this->isHexTag($fullMatch)) {
-                $hex = $this->extractHexFromTag($tag);
-                $this->hexIsValid($hex);
-                $argument = $this->hexToRgb($hex);
-                $type .= "_RGB";
-            }
-
-            if ($this->isRgbTag($fullMatch)) {
-                $argument = explode(":", $this->extractRgbFromTag($this->prepareMagicArgument($tag)));
-                $type .= "_RGB";
-            }
-
+            list ($type, $argument) = $this->proceedRgbAndHexTags($type, $fullMatch, $tag);
             $isClosing = $this->isClosingTag($fullMatch);
             $sequence = $this->getSequenceByTagInfo($type, $argument, $isClosing);
 
@@ -394,6 +382,30 @@ class Rainbow extends BaseRainbow
         $this->templateSequencePattern = "";
         $this->output = $template;
         return $this;
+    }
+
+    /**
+     * @param $type
+     * @param $fullMatch
+     * @param $tag
+     * @return array
+     * @throws InvalidColorException
+     */
+    protected function proceedRgbAndHexTags($type, $fullMatch, $tag)
+    {
+        $argument = null;
+        if ($this->isHexTag($fullMatch)) {
+            $hex = $this->extractHexFromTag($tag);
+            $this->hexIsValid($hex);
+            $argument = $this->hexToRgb($hex);
+            $type .= "_RGB";
+        }
+
+        if ($this->isRgbTag($fullMatch)) {
+            $argument = explode(":", $this->extractRgbFromTag($this->prepareMagicArgument($tag)));
+            $type .= "_RGB";
+        }
+        return [$type, $argument];
     }
 
     /**
