@@ -360,7 +360,6 @@ class Rainbow extends BaseRainbow
     {
         $template = preg_replace_callback(self::TAGS_PATTERN, function ($matches) {
             list ($fullMatch, , , $tag) = $matches;
-            $argument = $tag;
 
             if ($this->isCommand($tag)) {
                 $type = self::COMMAND_TYPE;
@@ -374,7 +373,7 @@ class Rainbow extends BaseRainbow
 
             list ($type, $argument) = $this->proceedRgbAndHexTags($type, $fullMatch, $tag);
             $isClosing = $this->isClosingTag($fullMatch);
-            $sequence = $this->getSequenceByTagInfo($type, $argument, $isClosing);
+            $sequence = $this->getSequenceByTagInfo($type, $argument ?? $tag, $isClosing);
 
             return $sequence;
         }, $template);
