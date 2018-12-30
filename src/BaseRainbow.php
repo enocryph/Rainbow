@@ -360,7 +360,7 @@ abstract class BaseRainbow
         if (is_numeric($key = array_search($colorName, $this->colorNames))) {
             return $this->colors[$key];
         } else {
-            throw new InvalidColorException("Invalid command: {$colorName}");
+            throw new InvalidColorException("Invalid color: {$colorName}");
         }
     }
 

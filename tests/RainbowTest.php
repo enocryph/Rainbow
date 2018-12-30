@@ -82,13 +82,13 @@ class RainbowTest extends TestCase
     public function testTemplateRgbTags()
     {
         $rainbow = new Rainbow();
-        $template = "<rgb:255;200;150>Hello</rgb>";
+        $template = "<rgb:255:200:150>Hello</rgb>";
         $this->assertSame("\033[38;2;255;200;150mHello\033[39m", $rainbow->template($template)->output());
 
-        $template .= "<backgroundRgb:255;199;150>Hello</backgroundRgb>";
+        $template .= "<backgroundRgb:255:199:150>Hello</backgroundRgb>";
         $this->assertSame("\033[38;2;255;200;150mHello\033[39m\033[48;2;255;199;150mHello\033[49m", $rainbow->template($template)->output());
 
-        $template = "<rgb:255;200;150>He<backgroundRgb:255;199;150>ll</backgroundRgb>o</rgb>";
+        $template = "<rgb:255:200:150>He<backgroundRgb:255:199:150>ll</backgroundRgb>o</rgb>";
         $this->assertSame("\033[38;2;255;200;150mHe\033[38;2;255;200;150m\033[48;2;255;199;150mll\033[49m\033[38;2;255;200;150mo\033[39m", $rainbow->template($template)->output());
     }
 

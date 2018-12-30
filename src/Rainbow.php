@@ -362,20 +362,28 @@ class Rainbow extends BaseRainbow
             list ($fullMatch, , , $tag) = $matches;
             $type = null;
 
-            if ($this->isHexTag($fullMatch) && $hexColor = $this->extractHexFromTag($tag)) {
-                $rgb = $this->hexToRgb($hexColor);
-            }
-
-            if ($this->isRgbTag($fullMatch) && $rgb = $this->extractRgbFromTag($this->prepareMagicArgument($tag))) {
-                $rgb = explode(";", $rgb);
-            }
-
-            if ($this->isBackgroundColor($tag)) {
-                $type = isset($rgb) ? self::BACKGROUND_RGB_TYPE : self::BACKGROUND_TYPE;
-            } elseif ($this->isColor($tag) || strpos($tag, 'rgb') === 0 || strpos($tag, 'hex') === 0) {
-                $type = isset($rgb) ? self::FOREGROUND_RGB_TYPE : self::FOREGROUND_TYPE;
-            } elseif ($this->isCommand($tag)) {
+            if ($this->isCommand($tag)) {
                 $type = self::COMMAND_TYPE;
+            } elseif ($this->isBackgroundColorTag($tag)) {
+                $type = self::BACKGROUND_TYPE;
+            } elseif ($this->isForegroundColorTag($tag)) {
+                $type = self::FOREGROUND_TYPE;
+            }
+
+            if (!$type) {
+                throw new InvalidArgumentException("Unknown tag $tag");
+            }
+
+            if ($this->isHexTag($fullMatch)) {
+                $hex = $this->extractHexFromTag($tag);
+                $this->hexIsValid($hex);
+                $rgb = $this->hexToRgb($hex);
+                $type .= "_RGB";
+            }
+
+            if ($this->isRgbTag($fullMatch)) {
+                $rgb = explode(":", $this->extractRgbFromTag($this->prepareMagicArgument($tag)));
+                $type .= "_RGB";
             }
 
             $isClosing = $this->isClosingTag($fullMatch);
@@ -385,7 +393,6 @@ class Rainbow extends BaseRainbow
         }, $template);
 
         $this->templateSequencePattern = "";
-
         $this->output = $template;
         return $this;
     }
@@ -396,7 +403,7 @@ class Rainbow extends BaseRainbow
      */
     protected function isRgbTag($tag)
     {
-        return is_numeric(stripos($tag, "rgb"));
+        return is_numeric(stripos($tag, "rgb:"));
     }
 
     /**
@@ -405,7 +412,7 @@ class Rainbow extends BaseRainbow
      */
     protected function isHexTag($tag)
     {
-        return is_numeric(stripos($tag, "hex"));
+        return is_numeric(stripos($tag, "hex:"));
     }
 
     /**
@@ -441,7 +448,6 @@ class Rainbow extends BaseRainbow
      * @param $isClosing
      * @return string
      * @throws Exception\InvalidCommandException
-     * @throws InvalidArgumentException
      * @throws InvalidColorException
      */
     protected function getSequenceByTagInfo($type, $argument, $isClosing)
@@ -464,7 +470,6 @@ class Rainbow extends BaseRainbow
      * @param $argument
      * @return string
      * @throws Exception\InvalidCommandException
-     * @throws InvalidArgumentException
      * @throws InvalidColorException
      */
     protected function getSequenceForOpeningTag($type, $argument)
@@ -478,8 +483,6 @@ class Rainbow extends BaseRainbow
             $code = $this->getRgbColorCode($type, $red, $green, $blue);
         } elseif ($type === self::COMMAND_TYPE) {
             $code = $this->getCommandCode($argument);
-        } else {
-            throw new InvalidArgumentException("Unknown type {$type}");
         }
 
         return $this->buildSequence($code);
@@ -532,5 +535,25 @@ class Rainbow extends BaseRainbow
             $this->templateSequencePattern = substr($this->templateSequencePattern, 0, strrpos($this->templateSequencePattern, "\033"));
         }
         return $this;
+    }
+
+    /**
+     * @param $color
+     * @return bool
+     */
+    protected function isForegroundColorTag($color)
+    {
+        preg_match('/^(fg|foreground)?(rgb|hex)?/i', $color, $matches);
+        return !empty(array_filter($matches)) || $this->isColor($this->prepareMagicArgument($color));
+    }
+
+    /**
+     * @param $color
+     * @return bool
+     */
+    protected function isBackgroundColorTag($color)
+    {
+        preg_match('/^(bg|background)(rgb|hex)?/i', $color, $matches);
+        return !empty($matches);
     }
 }
