@@ -359,7 +359,7 @@ class Rainbow extends BaseRainbow
     public function template($template)
     {
         $template = preg_replace_callback(self::TAGS_PATTERN, function ($matches) {
-            list ($fullMatch, $entrance, $ending, $tag) = $matches;
+            list ($fullMatch, , , $tag) = $matches;
             $type = null;
 
             if ($this->isHexTag($fullMatch) && $hexColor = $this->extractHexFromTag($tag)) {

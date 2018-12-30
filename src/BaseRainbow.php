@@ -209,7 +209,7 @@ abstract class BaseRainbow
      */
     public function fg($color)
     {
-        return call_user_func_array([$this, 'foreground'], func_get_args());
+        return call_user_func([$this, 'foreground'], $color);
     }
 
     /**
@@ -221,7 +221,7 @@ abstract class BaseRainbow
      */
     public function bg($color)
     {
-        return call_user_func_array([$this, 'background'], func_get_args());
+        return call_user_func_array([$this, 'background'], $color);
     }
 
     /**
@@ -267,7 +267,7 @@ abstract class BaseRainbow
      */
     public function bgRgb($red, $green, $blue)
     {
-        return call_user_func_array([$this, 'backgroundRgb'], func_get_args());
+        return call_user_func_array([$this, 'backgroundRgb'], [$red, $green, $blue]);
     }
 
 
@@ -288,7 +288,7 @@ abstract class BaseRainbow
      *
      * @param $type
      * @param $colorName
-     * @return $this|mixed
+     * @return $this
      * @throws InvalidColorException
      */
     protected function proceedColor($type, $colorName)
