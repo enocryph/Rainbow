@@ -281,17 +281,6 @@ abstract class BaseRainbow
     }
 
     /**
-     * @return string
-     */
-    public function __toString()
-    {
-        if (!(strrpos($this->output, PHP_EOL) === strlen($this->output) - 1)) {
-            return $this->output . PHP_EOL;
-        }
-        return $this->output;
-    }
-
-    /**
      * Proceed command
      *
      * @param $command

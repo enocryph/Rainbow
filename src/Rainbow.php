@@ -218,7 +218,7 @@ class Rainbow extends BaseRainbow
      * @var string
      */
     private $templateSequencePattern;
-    
+
     /**
      * Change foreground color with hex
      *
@@ -350,7 +350,7 @@ class Rainbow extends BaseRainbow
                 throw new InvalidArgumentException("Unknown tag $tag");
             }
 
-            list ($type, $argument) = $this->proceedRgbAndHexTags($type, $fullMatch, $tag);
+            list ($type, $argument) = $this->proceedRgbAndHexTags($type, $tag);
             $isClosing = $this->isClosingTag($fullMatch);
             $sequence = $this->getSequenceByTagInfo($type, $argument ?? $tag, $isClosing);
 
@@ -363,13 +363,23 @@ class Rainbow extends BaseRainbow
     }
 
     /**
+     * @return string
+     */
+    public function __toString()
+    {
+        if (!(strrpos($this->output, PHP_EOL) === strlen($this->output) - 1)) {
+            return $this->output . PHP_EOL;
+        }
+        return $this->output;
+    }
+
+    /**
      * @param $type
-     * @param $fullMatch
      * @param $tag
      * @return array
      * @throws InvalidColorException
      */
-    protected function proceedRgbAndHexTags($type, $fullMatch, $tag)
+    protected function proceedRgbAndHexTags($type, $tag)
     {
         $argument = null;
         $tag = $this->prepareMagicArgument($tag);
