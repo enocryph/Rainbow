@@ -330,9 +330,8 @@ abstract class BaseRainbow
     }
 
     /**
-     * Returns command from $commands array
-     *
      * @param $commandName
+     * @param bool $reset
      * @return mixed
      * @throws InvalidCommandException
      */
