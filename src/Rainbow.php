@@ -369,21 +369,19 @@ class Rainbow extends BaseRainbow
                 $type = self::BACKGROUND_TYPE;
             } elseif ($this->isForegroundColorTag($tag)) {
                 $type = self::FOREGROUND_TYPE;
-            }
-
-            if (!$type) {
+            } else {
                 throw new InvalidArgumentException("Unknown tag $tag");
             }
 
             if ($this->isHexTag($fullMatch)) {
                 $hex = $this->extractHexFromTag($tag);
                 $this->hexIsValid($hex);
-                $argument = $rgb = $this->hexToRgb($hex);
+                $argument = $this->hexToRgb($hex);
                 $type .= "_RGB";
             }
 
             if ($this->isRgbTag($fullMatch)) {
-                $argument = $rgb = explode(":", $this->extractRgbFromTag($this->prepareMagicArgument($tag)));
+                $argument = explode(":", $this->extractRgbFromTag($this->prepareMagicArgument($tag)));
                 $type .= "_RGB";
             }
 
