@@ -276,7 +276,7 @@ class Rainbow extends BaseRainbow
      */
     public function bgHex($color)
     {
-        return call_user_func_array([$this, 'backgroundHex'], func_get_args());
+        return call_user_func([$this, 'backgroundHex'], $color);
     }
 
     /**
@@ -393,36 +393,18 @@ class Rainbow extends BaseRainbow
     protected function proceedRgbAndHexTags($type, $fullMatch, $tag)
     {
         $argument = null;
-        if ($this->isHexTag($fullMatch)) {
-            $hex = $this->extractHexFromTag($tag);
+        $tag = $this->prepareMagicArgument($tag);
+        if ($hex = $this->extractHexFromTag($tag)) {
             $this->hexIsValid($hex);
             $argument = $this->hexToRgb($hex);
             $type .= "_RGB";
         }
 
-        if ($this->isRgbTag($fullMatch)) {
-            $argument = explode(":", $this->extractRgbFromTag($this->prepareMagicArgument($tag)));
+        if ($rgb = $this->extractRgbFromTag($tag)) {
+            $argument = explode(":", $rgb);
             $type .= "_RGB";
         }
         return [$type, $argument];
-    }
-
-    /**
-     * @param $tag
-     * @return bool
-     */
-    protected function isRgbTag($tag)
-    {
-        return is_numeric(stripos($tag, "rgb:"));
-    }
-
-    /**
-     * @param $tag
-     * @return bool
-     */
-    protected function isHexTag($tag)
-    {
-        return is_numeric(stripos($tag, "hex:"));
     }
 
     /**
@@ -431,16 +413,22 @@ class Rainbow extends BaseRainbow
      */
     protected function extractHexFromTag($tag)
     {
-        return str_ireplace('hex:', '', $tag);
+        if (is_numeric(stripos($tag, "hex:"))) {
+            return str_ireplace('hex:', '', $tag);
+        }
+        return null;
     }
 
     /**
      * @param $tag
-     * @return mixed
+     * @return string|null
      */
     protected function extractRgbFromTag($tag)
     {
-        return str_ireplace('rgb:', '', $tag);
+        if (is_numeric(stripos($tag, "rgb:"))) {
+            return str_ireplace('rgb:', '', $tag);
+        }
+        return null;
     }
 
     /**
@@ -491,7 +479,7 @@ class Rainbow extends BaseRainbow
         } elseif ($type === self::FOREGROUND_RGB_TYPE || $type === self::BACKGROUND_RGB_TYPE) {
             list ($red, $green, $blue) = $argument;
             $code = $this->getRgbColorCode($type, $red, $green, $blue);
-        } elseif ($type === self::COMMAND_TYPE) {
+        } else {
             $code = $this->getCommandCode($argument);
         }
 
