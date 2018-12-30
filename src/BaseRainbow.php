@@ -221,7 +221,7 @@ abstract class BaseRainbow
      */
     public function bg($color)
     {
-        return call_user_func_array([$this, 'background'], $color);
+        return call_user_func([$this, 'background'], $color);
     }
 
     /**

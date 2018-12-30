@@ -381,11 +381,7 @@ class Rainbow extends BaseRainbow
             $isClosing = $this->isClosingTag($fullMatch);
             $sequence = $this->getSequenceByTagInfo($type, isset($rgb) ? $rgb : $tag, $isClosing);
 
-            if ($isClosing) {
-                return $sequence . $this->templateSequencePattern;
-            }
-            $output = $this->templateSequencePattern;
-            return $output;
+            return $sequence;
         }, $template);
 
         $this->templateSequencePattern = "";
@@ -453,25 +449,40 @@ class Rainbow extends BaseRainbow
         if ($isClosing) {
             $sequence = $this->getSequenceForClosingTag($type, $argument);
             $this->removeTemplateSequence();
+            $sequence = $sequence . $this->templateSequencePattern;
         } else {
-            if ($type === self::FOREGROUND_TYPE || $type === self::BACKGROUND_TYPE) {
-                $argument = $this->prepareMagicArgument($argument);
-                $color = $this->getColor($argument);
-                $code = $this->getColorCode($type, $color);
-            } elseif ($type === self::FOREGROUND_RGB_TYPE || $type === self::BACKGROUND_RGB_TYPE) {
-                list ($red, $green, $blue) = $argument;
-                $code = $this->getRgbColorCode($type, $red, $green, $blue);
-            } elseif ($type === self::COMMAND_TYPE) {
-                $code = $this->getCommandCode($argument);
-            } else {
-                throw new InvalidArgumentException("Unknown type {$type}");
-            }
-
-            $sequence = $this->buildSequence($code);
+            $sequence = $this->getSequenceForOpeningTag($type, $argument);
             $this->addTemplateSequence($sequence);
+            $sequence = $this->templateSequencePattern;
         }
 
         return $sequence;
+    }
+
+    /**
+     * @param $type
+     * @param $argument
+     * @return string
+     * @throws Exception\InvalidCommandException
+     * @throws InvalidArgumentException
+     * @throws InvalidColorException
+     */
+    protected function getSequenceForOpeningTag($type, $argument)
+    {
+        if ($type === self::FOREGROUND_TYPE || $type === self::BACKGROUND_TYPE) {
+            $argument = $this->prepareMagicArgument($argument);
+            $color = $this->getColor($argument);
+            $code = $this->getColorCode($type, $color);
+        } elseif ($type === self::FOREGROUND_RGB_TYPE || $type === self::BACKGROUND_RGB_TYPE) {
+            list ($red, $green, $blue) = $argument;
+            $code = $this->getRgbColorCode($type, $red, $green, $blue);
+        } elseif ($type === self::COMMAND_TYPE) {
+            $code = $this->getCommandCode($argument);
+        } else {
+            throw new InvalidArgumentException("Unknown type {$type}");
+        }
+
+        return $this->buildSequence($code);
     }
 
     /**
