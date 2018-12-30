@@ -270,6 +270,26 @@ abstract class BaseRainbow
         return call_user_func_array([$this, 'backgroundRgb'], [$red, $green, $blue]);
     }
 
+    /**
+     * @param $string
+     * @return $this
+     */
+    public function __invoke($string)
+    {
+        $this->output = $string;
+        return $this;
+    }
+
+    /**
+     * @return string
+     */
+    public function __toString()
+    {
+        if (!(strrpos($this->output, PHP_EOL) === strlen($this->output) - 1)) {
+            return $this->output . PHP_EOL;
+        }
+        return $this->output;
+    }
 
     /**
      * Proceed command

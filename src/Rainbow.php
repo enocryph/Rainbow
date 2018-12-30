@@ -218,28 +218,7 @@ class Rainbow extends BaseRainbow
      * @var string
      */
     private $templateSequencePattern;
-
-    /**
-     * @param $string
-     * @return $this
-     */
-    public function __invoke($string)
-    {
-        $this->output = $string;
-        return $this;
-    }
-
-    /**
-     * @return string
-     */
-    public function __toString()
-    {
-        if (!(strrpos($this->output, PHP_EOL) === strlen($this->output) - 1)) {
-            return $this->output . PHP_EOL;
-        }
-        return $this->output;
-    }
-
+    
     /**
      * Change foreground color with hex
      *
@@ -394,13 +373,13 @@ class Rainbow extends BaseRainbow
     {
         $argument = null;
         $tag = $this->prepareMagicArgument($tag);
-        if ($hex = $this->extractHexFromTag($tag)) {
+        if ($hex = $this->extractRgbHexFromTag($tag, "hex")) {
             $this->hexIsValid($hex);
             $argument = $this->hexToRgb($hex);
             $type .= "_RGB";
         }
 
-        if ($rgb = $this->extractRgbFromTag($tag)) {
+        if ($rgb = $this->extractRgbHexFromTag($tag, "rgb")) {
             $argument = explode(":", $rgb);
             $type .= "_RGB";
         }
@@ -409,24 +388,13 @@ class Rainbow extends BaseRainbow
 
     /**
      * @param $tag
-     * @return mixed
+     * @param $subject
+     * @return mixed|null
      */
-    protected function extractHexFromTag($tag)
+    protected function extractRgbHexFromTag($tag, $subject)
     {
-        if (is_numeric(stripos($tag, "hex:"))) {
-            return str_ireplace('hex:', '', $tag);
-        }
-        return null;
-    }
-
-    /**
-     * @param $tag
-     * @return string|null
-     */
-    protected function extractRgbFromTag($tag)
-    {
-        if (is_numeric(stripos($tag, "rgb:"))) {
-            return str_ireplace('rgb:', '', $tag);
+        if (is_numeric(stripos($tag, "$subject:"))) {
+            return str_ireplace("$subject:", '', $tag);
         }
         return null;
     }
