@@ -214,6 +214,9 @@ class Rainbow extends BaseRainbow
 
     const TAGS_PATTERN = '/(<\s*\/?\s*)(\s*([^>]*)?\s*>)/i';
 
+    /**
+     * @var string
+     */
     private $templateSequencePattern;
 
     /**
@@ -285,7 +288,7 @@ class Rainbow extends BaseRainbow
      */
     protected function hexIsValid($hexColor)
     {
-        preg_match('/^#(?:[0-9a-fA-F]{6})$/', $hexColor, $matches);
+        preg_match('/^#?(?:[0-9a-fA-F]{6})$/', $hexColor, $matches);
 
         if (empty($matches)) {
             throw new InvalidColorException("Invalid hex color: $hexColor");
@@ -302,7 +305,8 @@ class Rainbow extends BaseRainbow
      */
     protected function hexToRgb($color)
     {
-        return sscanf($color, "#%02x%02x%02x");
+        $color = ltrim($color, "#");
+        return sscanf($color, "%02x%02x%02x");
     }
 
     /**
@@ -346,19 +350,26 @@ class Rainbow extends BaseRainbow
         return $this;
     }
 
+    /**
+     * Convert template with tags to ASCII sequence
+     *
+     * @param $template
+     * @return $this
+     */
     public function template($template)
     {
         $template = preg_replace_callback(self::TAGS_PATTERN, function ($matches) {
             list ($fullMatch, $entrance, $ending, $tag) = $matches;
             $type = null;
 
-            if ($this->isHexTag($fullMatch) && $this->hexIsValid($hexColor = $this->extractHexFromTag($tag))) {
+            if ($this->isHexTag($fullMatch) && $hexColor = $this->extractHexFromTag($tag)) {
                 $rgb = $this->hexToRgb($hexColor);
             }
 
-            if ($this->isRgbTag($fullMatch) && $rgb = $this->extractRgbFromTag($tag)) {
+            if ($this->isRgbTag($fullMatch) && $rgb = $this->extractRgbFromTag($this->prepareMagicArgument($tag))) {
                 $rgb = explode(";", $rgb);
             }
+
             if ($this->isBackgroundColor($tag)) {
                 $type = isset($rgb) ? self::BACKGROUND_RGB_TYPE : self::BACKGROUND_TYPE;
             } elseif ($this->isColor($tag) || strpos($tag, 'rgb') === 0 || strpos($tag, 'hex') === 0) {
@@ -374,39 +385,69 @@ class Rainbow extends BaseRainbow
                 return $sequence . $this->templateSequencePattern;
             }
             $output = $this->templateSequencePattern;
-            $this->templateSequencePattern = "";
             return $output;
         }, $template);
+
+        $this->templateSequencePattern = "";
 
         $this->output = $template;
         return $this;
     }
 
+    /**
+     * @param $tag
+     * @return bool
+     */
     protected function isRgbTag($tag)
     {
-        return is_numeric(strpos($tag, "rgb"));
+        return is_numeric(stripos($tag, "rgb"));
     }
 
+    /**
+     * @param $tag
+     * @return bool
+     */
     protected function isHexTag($tag)
     {
-        return is_numeric(strpos($tag, "hex"));
+        return is_numeric(stripos($tag, "hex"));
     }
 
+    /**
+     * @param $tag
+     * @return mixed
+     */
     protected function extractHexFromTag($tag)
     {
-        return str_replace('hex', '', $tag);
+        return str_ireplace('hex:', '', $tag);
     }
 
+    /**
+     * @param $tag
+     * @return mixed
+     */
     protected function extractRgbFromTag($tag)
     {
-        return str_replace('rgb:', '', $tag);
+        return str_ireplace('rgb:', '', $tag);
     }
 
+    /**
+     * @param $tag
+     * @return bool
+     */
     protected function isClosingTag($tag)
     {
         return is_numeric(strpos($tag, '</'));
     }
 
+    /**
+     * @param $type
+     * @param $argument
+     * @param $isClosing
+     * @return string
+     * @throws Exception\InvalidCommandException
+     * @throws InvalidArgumentException
+     * @throws InvalidColorException
+     */
     protected function getSequenceByTagInfo($type, $argument, $isClosing)
     {
         if ($isClosing) {
@@ -416,10 +457,10 @@ class Rainbow extends BaseRainbow
             if ($type === self::FOREGROUND_TYPE || $type === self::BACKGROUND_TYPE) {
                 $argument = $this->prepareMagicArgument($argument);
                 $color = $this->getColor($argument);
-                $code =  $this->getColorCode($type, $color);
+                $code = $this->getColorCode($type, $color);
             } elseif ($type === self::FOREGROUND_RGB_TYPE || $type === self::BACKGROUND_RGB_TYPE) {
                 list ($red, $green, $blue) = $argument;
-                $code =  $this->getRgbColorCode($type, $red, $green, $blue);
+                $code = $this->getRgbColorCode($type, $red, $green, $blue);
             } elseif ($type === self::COMMAND_TYPE) {
                 $code = $this->getCommandCode($argument);
             } else {
@@ -433,35 +474,51 @@ class Rainbow extends BaseRainbow
         return $sequence;
     }
 
+    /**
+     * @param $type
+     * @param $argument
+     * @return string
+     * @throws Exception\InvalidCommandException
+     */
     protected function getSequenceForClosingTag($type, $argument)
     {
         if ($type === self::BACKGROUND_RGB_TYPE || $type === self::BACKGROUND_TYPE) {
             $code = $this->getCommandCode('resetBackgroundColor');
         } elseif ($type === self::FOREGROUND_RGB_TYPE || $type === self::FOREGROUND_TYPE) {
             $code = $this->getCommandCode('resetForegroundColor');
-        } elseif ($type === self::COMMAND_TYPE) {
+        } else {
             $code = $this->getCommandCode($argument, true);
         }
+
         return $this->buildSequence($code);
     }
 
+    /**
+     * @param $code
+     * @return string
+     */
     protected function buildSequence($code)
     {
         return sprintf(self::ESCAPE_SEQUENCE, $code);
     }
 
+    /**
+     * @param $sequence
+     * @return $this
+     */
     protected function addTemplateSequence($sequence)
     {
         $this->templateSequencePattern .= $sequence;
         return $this;
     }
 
+    /**
+     * @return $this
+     */
     protected function removeTemplateSequence()
     {
         if (is_numeric(strrpos($this->templateSequencePattern, "\033"))) {
-            print_r($this->templateSequencePattern);
             $this->templateSequencePattern = substr($this->templateSequencePattern, 0, strrpos($this->templateSequencePattern, "\033"));
-            print_r($this->templateSequencePattern);
         }
         return $this;
     }
