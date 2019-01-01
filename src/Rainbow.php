@@ -295,7 +295,7 @@ class Rainbow extends BaseRainbow
      */
     public function output()
     {
-        return $this->output;
+        return $this->output . $this->buildSequence(0);
     }
 
     /**
@@ -367,6 +367,7 @@ class Rainbow extends BaseRainbow
      */
     public function __toString()
     {
+        $this->output = $this->output . $this->buildSequence(0);
         if (!(strrpos($this->output, PHP_EOL) === strlen($this->output) - 1)) {
             return $this->output . PHP_EOL;
         }

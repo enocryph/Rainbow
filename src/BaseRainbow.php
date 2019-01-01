@@ -153,7 +153,7 @@ abstract class BaseRainbow
      * @throws InvalidColorException
      * @throws InvalidCommandException
      */
-    public function proceedMagicCall($name)
+    protected function proceedMagicCall($name)
     {
         $formatted = $this->prepareMagicArgument($name);
         if ($this->isColor($formatted)) {
